@@ -1,0 +1,39 @@
+1. Abstract
+Modern applications expose their functionality through APIs, making the API layer the primary attack surface for credential
+stuffing, token replay, brute-force, and denial-of-service style abuse. This project designs and implements an API Security
+Gateway that sits in front of backend services and enforces two complementary controls before any request reaches business
+logic: automated rate limiting (to throttle abusive or excessive traffic per client) and token validation (to verify the authenticity,
+integrity, and scope of JSON Web Tokens issued through an OAuth 2.0 / OpenID Connect flow). The gateway is built as a
+standalone reverse-proxy style middleware so that it can be dropped in front of any REST API without modifying downstream
+services. Rate limiting is adaptive rather than fixed: limits are configurable per client, per endpoint, and per subscription tier, and
+are enforced using the sliding-window and token-bucket algorithms with Redis as a shared, low-latency counter store. Token
+validation covers signature verification, expiry, audience/issuer checks, revocation-list lookups, and scope-based authorization.
+The system is designed, implemented, tested against common attack scenarios (replay attacks, brute-force login attempts, burst
+traffic), and evaluated for latency overhead, throughput, and false-positive/false-negative rates on legitimate versus malicious
+traffic.
+2. Problem Statement
+APIs are increasingly the backbone of web, mobile, and IoT applications, and are also the fastest-growing attack vector
+according to industry threat reports. Two of the most common and damaging classes of API abuse are:
+•
+Uncontrolled request volume: attackers or misbehaving clients flood an API with requests, exhausting compute resources,
+degrading service for legitimate users, or brute-forcing credentials and OTPs through sheer repetition.
+• Weak or absent token verification: services that trust a bearer token without fully validating its signature, expiry, audience,
+and scope are vulnerable to token replay, privilege escalation, and forged-token attacks.
+Individually, many APIs implement ad-hoc, inconsistent versions of these controls duplicated across services, which increases
+maintenance cost and the chance of a misconfigured or forgotten check. This project addresses the problem by centralizing both
+controls into a single, reusable gateway component that every request must pass through, ensuring consistent enforcement,
+centralized logging/auditing, and a single point of policy configuration.
+3. Objectives
+•
+Design a gateway architecture that intercepts all inbound API traffic before it reaches backend services.
+•
+Implement automated, configurable rate limiting using industry-standard algorithms (Token Bucket and Sliding Window
+Log/Counter) with per-client and per-endpoint granularity.
+•
+Implement robust JWT-based token validation, including signature verification (RS256/HS256), expiry, issuer/audience
+checks, and revocation handling.
+•
+Provide adaptive throttling that reacts to abnormal traffic patterns (e.g., temporarily tightening limits for a client showing
+brute-force-like behavior).
+•
+Build centralized logging, monitoring, and alerting for blocked requests, invalid tokens, and rate-limit violations.
